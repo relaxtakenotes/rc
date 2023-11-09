@@ -57,6 +57,22 @@ hook.Add("EntityTakeDamage", "rc_hurt", function(target, dmg)
     net.Broadcast()
 end)
 
+local function enemy_is_alerted_and_close(npc, ply)
+    if npc:Disposition(ply) ~= D_HT then return false end
+    if npc:GetPos():Distance(ply:GetPos()) > 1250 and not npc.am_alerted_was_close then return false end
+    if npc:GetNPCState() ~= NPC_STATE_COMBAT and npc:GetNPCState() ~= NPC_STATE_ALERT and npc:GetActivity() ~= ACT_COMBAT_IDLE then return false end
+    npc.am_alerted_was_close = true
+
+    return true
+end
+
+local function npc_can_attack(npc)
+    if not isfunction(npc.GetActiveWeapon) or npc:GetActiveWeapon() ~= NULL then return true end
+    if npc:GetShootPos():Distance(npc:GetPos()) > 0 and bit.band(npc:CapabilitiesGet(), CAP_USE_WEAPONS) == CAP_USE_WEAPONS then return false end
+
+    return true
+end
+
 hook.Add("FinishMove", "rc_threat_loop", function(ply, mv)
     if engine.TickCount() % 2 == 0 then return end
 
@@ -72,10 +88,11 @@ hook.Add("FinishMove", "rc_threat_loop", function(ply, mv)
     for _, npc in ipairs(ents.FindByClass("npc_*")) do
         if table.HasValue(ignore_list, npc:GetClass()) then continue end
         if not IsValid(npc) or not npc:IsNPC() or not npc.GetEnemy then continue end --print(IsValid(npc), npc:IsNPC(), npc.GetEnemy, " --- ", npc)
+        if not npc_can_attack(npc) then continue end
         local target = npc:GetEnemy()
         if not target or not target:IsValid() then continue end
 
-        if target == ply then
+        if target == ply or enemy_is_alerted_and_close(npc, ply) then
             local player_pos = ply:EyePos()
             local npc_pos = npc:GetPos() + vector_up * 32
             local distance = player_pos:Distance(npc_pos)

@@ -80,7 +80,7 @@ end
 
 local function play(path, volume)
     //EmitSound(path, LocalPlayer():EyePos(), -1, CHAN_VOICE, volume, 75, SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL, 100, 0)
-    if rdrm and (rdrm.in_deadeye or rdrm.in_killcam) then return end
+    if (rdrm and (rdrm.in_deadeye or rdrm.in_killcam)) or LocalPlayer():Health() <= 0 then return end
 
     net.Start("rc_request_sound")
     net.WriteString(path)
@@ -212,7 +212,6 @@ local function add_events()
         pretty_name = "Killed an Enemy",
         desired_timeout = 30,
         chance = 0.5,
-        should_play = function(self) return battle_timer > 0 end,
         get_sound = function(self)
             if enemy_count > 1 then
                 return get_random_file_with_pattern(self.files, "%w+")
@@ -470,6 +469,8 @@ net.Receive("rc_entityfirebullets", function(len)
 	local weapon = net.ReadEntity()
     local disposition = net.ReadInt(4)
 
+    if not IsValid(entity) then return end
+
     local lp = LocalPlayer()
 
     local shootpos = entity:EyePos()
@@ -566,7 +567,7 @@ hook.Add("entity_killed", "rc_entitykilled", function(data)
 
     local lp = LocalPlayer()
 
-	if attacker == lp and (victim:IsNPC() or victim:IsPlayer()) then
+	if attacker == lp and (victim:IsNPC() or victim:IsPlayer()) and (enemies[victim] or battle_timer > 0) then
         handle_event("player_killed_enemy")
     end
 
