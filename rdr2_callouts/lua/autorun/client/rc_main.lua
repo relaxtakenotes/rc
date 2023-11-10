@@ -2,7 +2,7 @@ local enabled = CreateConVar("cl_rc_enabled", 1, FCVAR_ARCHIVE)
 local debug_enabled = CreateConVar("cl_rc_debug_enabled", 1, FCVAR_ARCHIVE)
 local voice_name = CreateConVar("cl_rc_voice_name", "arthur", FCVAR_ARCHIVE)
 
-local desired_timeout = 10
+local desired_timeout = 5
 local timeout = 0
 
 local battle_timer = 0
@@ -30,10 +30,6 @@ local last_menu_open = false
 
 local samples = util.JSONToTable(file.Read("!rc_samples.lua", "LUA"))
 local samples_framerate = 256
-
-math.random()
-math.random()
-math.random()
 
 local stroffset = 0
 local function screen_text(text)
@@ -178,7 +174,7 @@ local function add_events()
         name = "enemy_missed_player",
         pretty_name = "Enemy Near Miss",
         desired_timeout = 40,
-        chance = 0.1,
+        chance = 0.2,
         should_play = function(self) return battle_timer > 0 end,
         get_sound = function(self) 
             return get_random_file_with_pattern(self.files, "%w+")
@@ -189,7 +185,7 @@ local function add_events()
         name = "player_missed_enemy",
         pretty_name = "Player Near Miss",
         desired_timeout = 40,
-        chance = 0.1,
+        chance = 0.2,
         should_play = function(self) return battle_timer > 0 end,
         get_sound = function(self) 
             return get_random_file_with_pattern(self.files, "%w+")
@@ -199,8 +195,8 @@ local function add_events()
     add_event({
         name = "enemy_damaged_player",
         pretty_name = "Player Hurt",
-        desired_timeout = 50,
-        chance = 0.2,
+        desired_timeout = 30,
+        chance = 0.4,
         should_play = function(self) return battle_timer > 0 end,
         get_sound = function(self) 
             return get_random_file_with_pattern(self.files, "%w+")
@@ -211,7 +207,7 @@ local function add_events()
         name = "player_killed_enemy",
         pretty_name = "Killed an Enemy",
         desired_timeout = 30,
-        chance = 0.5,
+        chance = 0.35,
         get_sound = function(self)
             if enemy_count > 1 then
                 return get_random_file_with_pattern(self.files, "%w+")
@@ -535,11 +531,13 @@ net.Receive("rc_entitytakedamage", function(len)
 
     if target == lp and not is_fall_damage then
         handle_event("enemy_damaged_player")
-        local_enemies[attacker] = true
-        battle_timer = 60
+        if attacker:IsNPC() or attacker:IsPlayer() and attacker != lp then
+            local_enemies[attacker] = true
+            battle_timer = 60
+        end
     end
 
-    if attacker == lp then
+    if attacker == lp and (target:IsNPC() or target:IsPlayer()) then
         misses = math.max(0, misses - 2)
         if enemies[target] then
             battle_timer = 60
@@ -670,7 +668,7 @@ hook.Add("Think", "rc_think", function()
 
     // handle no ammo event
     local weapon = lp:GetActiveWeapon()
-    if IsValid(weapon) then
+    if IsValid(weapon) and weapon:GetClass() != "weapon_rpg" then
         local ammotype = weapon:GetPrimaryAmmoType()
         has_ammo_last = has_ammo
         has_ammo = lp:GetAmmoCount(ammotype) > 0
@@ -739,14 +737,17 @@ surface.CreateFont("rc_font", {
 
 concommand.Add("rc_menu", function() 
     menu_open = not menu_open
+    gui.EnableScreenClicker(menu_open)
 end)
 
 concommand.Add("+rc_menu", function() 
     menu_open = true
+    gui.EnableScreenClicker(true)
 end)
 
 concommand.Add("-rc_menu", function() 
     menu_open = false
+    gui.EnableScreenClicker(false)
 end)
 
 local last_mouse_down = false
@@ -794,8 +795,6 @@ hook.Add("RenderScreenspaceEffects", "rc_ui", function()
         total_count = total_count + 1
     end
     local count = 0
-
-    gui.EnableScreenClicker(menu_open)
 
     if menu_open then
         animfrac = math.min(1, animfrac + FrameTime() * 2)
