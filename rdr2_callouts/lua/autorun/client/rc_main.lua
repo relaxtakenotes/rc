@@ -901,16 +901,8 @@ hook.Add("RenderScreenspaceEffects", "rc_ui", function()
     end
 end)
 
-local lerped_weight = 0
-local weight = 0
-
-hook.Add("InitPostEntity", "rc_hookermouth", function() 
-    local GM = gmod.GetGamemode()
-
-    function GM:MouthMoveAnimation(ply)
-        // you can do it through faceposer... manually... for each file... to achieve an effect most people wont notice or hide away behind their awesome playermodel mask.
-        // but that is too much work, so i do it this way which is significantly easier
-    
+hook.Add("PreDrawOpaqueRenderables", "rc_mouth_move_animation", function()
+    for i, ply in ipairs(player.GetAll()) do
         local flexes = {
             ply:GetFlexIDByName("jaw_drop"),
             ply:GetFlexIDByName("left_part"),
@@ -918,25 +910,27 @@ hook.Add("InitPostEntity", "rc_hookermouth", function()
             ply:GetFlexIDByName("left_mouth_drop"),
             ply:GetFlexIDByName("right_mouth_drop")
         }
-    
-        ply.current_samples_tick = (ply.current_samples_tick or 0) + FrameTime() * samples_framerate
-    
+
+        ply.current_samples_tick = (ply.current_samples_tick or 0) + FrameTime() * samples_framerate / 2 // investigate why i have to divide by two here...
+
         if (ply.current_samples_length or 0) <= ply.current_samples_tick then 
             ply.current_samples = {}
             ply.current_samples_tick = 0
             ply.current_samples_length = 0
         end
-    
+
         if ply.current_samples_length > 0 then
             ply.weight = math.Clamp(ply.current_samples[math.ceil(ply.current_samples_tick)] / 65535 * 2, 0, 2)
         else
             ply.weight = 0
         end
-    
-        ply.lerped_weight = Lerp(FrameTime() * 40 + FrameTime(), (ply.lerped_weight or 0), ply.weight)
-    
+
+        ply.lerped_weight = Lerp((FrameTime() * 20 + FrameTime()) / 2, (ply.lerped_weight or 0), ply.weight)
+
         for k, v in ipairs(flexes) do
             ply:SetFlexWeight(v, ply.lerped_weight)
         end
+
+        ply.lerped_weight = Lerp((FrameTime() * 20 + FrameTime()) / 2, (ply.lerped_weight or 0), ply.weight)
     end
 end)

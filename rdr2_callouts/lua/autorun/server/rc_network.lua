@@ -1,5 +1,4 @@
 local enabled = CreateConVar("sv_rc_enabled", 1, FCVAR_ARCHIVE)
-
 local ignore_list = {"npc_clawscanner", "npc_stalker", "npc_turret_floor", "npc_combinedropship", "npc_cscanner", "npc_turret_ceiling", "npc_combine_camera", "npc_crow", "npc_pigeon", "npc_seagull"}
 
 util.AddNetworkString("rc_entityfirebullets")
