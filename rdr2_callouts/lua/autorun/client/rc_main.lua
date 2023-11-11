@@ -41,6 +41,8 @@ local last_menu_open = false
 local samples = util.JSONToTable(file.Read("!rc_samples.lua", "LUA"))
 local samples_framerate = 256
 
+local fchance = {}
+
 local stroffset = 0
 local function screen_text(text)
     stroffset = stroffset + 0.02
@@ -60,8 +62,11 @@ end
 local function find_sounds(pathstart, pathend)
     local result = file.Find("sound/"..pathstart..pathend, "GAME")
     for i, _path in ipairs(result) do
-        result[i] = pathstart.._path
+        local path = pathstart.._path
+        result[i] = path
+        fchance[path] = 1
     end
+
     return result
 end
 
@@ -80,7 +85,20 @@ local function get_random_file_with_pattern(files, pattern, opposite)
     if count <= 0 then
         return "none"
     end
-
+    
+    for i = 1, 100 do
+        local path = matched_files[math.random(1, count)]
+        for key, item in pairs(fchance) do
+            if key != path then 
+                fchance[key] = math.min(1, fchance[key] + 0.1)
+            end
+        end
+        if fchance[path] > 0.9 then
+            fchance[path] = math.max(0, fchance[path] - 0.25)
+            return path
+        end
+    end
+    
     return matched_files[math.random(1, count)]
 end
 
@@ -218,6 +236,7 @@ local function add_events()
         desired_timeout = 5,
         chance = 0.8,
         manual = true,
+        visible = false,
         play = function(self)
             if playing then return end
 
@@ -240,6 +259,7 @@ local function add_events()
         pretty_name = "Killed an Enemy",
         desired_timeout = 30,
         chance = 0.35,
+        visible = false,
         get_sound = function(self)
             if enemy_count > 1 then
                 return get_random_file_with_pattern(self.files, "%w+")
@@ -282,6 +302,7 @@ local function add_events()
         pretty_name = "Rough Landing",
         desired_timeout = 3,
         manual = true,
+        visible = false,
         play = function(self)
             if playing or self.timeout > 0 then return end
 
@@ -305,6 +326,7 @@ local function add_events()
         pretty_name = "Jump Huff",
         desired_timeout = 0,
         manual = true,
+        visible = false,
         play = function(self)
             if playing then return end
 
@@ -336,6 +358,7 @@ local function add_events()
         pretty_name = "Breathing",
         desired_timeout = 1.25,
         manual = true,
+        visible = false,
         play = function(self)
             if playing or self.timeout > 0 then return end
 
@@ -360,6 +383,7 @@ local function add_events()
         pretty_name = "Out of Breath",
         desired_timeout = 1.25,
         manual = true,
+        visible = false,
         play = function(self)
             if playing or self.timeout > 0 then return end
 
@@ -823,15 +847,7 @@ local function pairsByKeys(t, f)
 end
 
 local function is_hovered(box1x, box1y, box1w, box1h, box2x, box2y, box2w, box2h)
-    if box1x > box2x + box2w - 1 or
-       box1y > box2y + box2h - 1 or
-       box2x > box1x + box1w - 1 or
-       box2y > box1y + box1h - 1   
-    then
-        return false               
-    else
-        return true                
-    end
+    return not (box1x > box2x + box2w - 1 or box1y > box2y + box2h - 1 or box2x > box1x + box1w - 1 or box2y > box1y + box1h - 1)
 end
 
 local max_width = 0
