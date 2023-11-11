@@ -1,3 +1,13 @@
+/*
+    Notes for people that wanna make their own sound packs with this:
+       1) Don't use non-wav formats, as it'll break certain timings due to SoundDuration() not supporting anythis else but wav (if you REALLY want non-wav, lmk)
+       2) Conversion tools can be found in the github repo, precisely in rdr2_callouts/sound/rc/
+       3) If you do not wish or can't include a certain event type, you can simply not create a folder for it. The mod will ignore it and wont try to use it.
+       4) If you wish for more functionality, let me know or make it yourself.
+          You can pull request improvements, fixes or changes to my github repo or post your own version wherever you want. No need to ask me for permission.
+          (refer to the unlicense license if you're unsure. fyi i have it on almost every mod i made fully myself)
+*/
+ 
 local enabled = CreateConVar("cl_rc_enabled", 1, FCVAR_ARCHIVE)
 local debug_enabled = CreateConVar("cl_rc_debug_enabled", 1, FCVAR_ARCHIVE)
 local voice_name = CreateConVar("cl_rc_voice_name", "arthur", FCVAR_ARCHIVE)
@@ -40,7 +50,7 @@ end
 local events = {}
 
 local function read_vector_uncompressed()
-	local tempVec = Vector(0,0,0)
+	local tempVec = Vector(0, 0, 0)
 	tempVec.x = net.ReadFloat()
 	tempVec.y = net.ReadFloat()
 	tempVec.z = net.ReadFloat()
@@ -134,8 +144,7 @@ local function add_event(data)
             playing = true
             timer.Simple(math.Rand(0.4, 0.6), function()
                 play(path, 1)
-                timer.Simple(SoundDuration(path) + 0.2, function() playing = false end) // remember to change this if you're going to use non-wav formats...
-                                                                                        // or formally support non windows players, lol
+                timer.Simple(SoundDuration(path) + 0.2, function() playing = false end)
             end)
         end,
         manual = data.manual and true or false,
@@ -200,6 +209,29 @@ local function add_events()
         should_play = function(self) return battle_timer > 0 end,
         get_sound = function(self) 
             return get_random_file_with_pattern(self.files, "%w+")
+        end
+    })
+
+    add_event({
+        name = "enemy_damaged_player_huff",
+        pretty_name = "Player Hurt (Huff)",
+        desired_timeout = 5,
+        chance = 0.8,
+        manual = true,
+        play = function(self)
+            if playing then return end
+
+            local path = get_random_file_with_pattern(self.files, "%w+")
+            local lp = LocalPlayer()
+        
+            playing = true
+            timer.Simple(math.Rand(0.05, 0.1), function()
+                play(path, 1)
+                timer.Simple(SoundDuration(path) + 0.2, function()
+                    playing = false
+                    handle_event("enemy_damaged_player")
+                end)
+            end)
         end
     })
 
@@ -382,7 +414,8 @@ local function add_events()
         ["Good Morning"] = "player_greet_morning", 
         ["Hi"] = "player_greet_general", 
         ["Good evening"] = "player_greet_evening", 
-        ["Farewell"] = "player_goodbye"
+        ["Farewell"] = "player_goodbye",
+        ["Laugh"] = "player_laugh"
         }
     ) do
         add_event({
@@ -505,14 +538,18 @@ net.Receive("rc_entityfirebullets", function(len)
         end
     else
         // handle enemies shooting at you
-        if disposition != 1 then
+        if disposition != 1 then // 1 = D_HT, but when i compared it with D_HT, it didn't pass... wtf?
             return 
         end
     
         local ldistance, point, _ = util.DistanceToLine(tr.StartPos, tr.HitPos, lp:EyePos())
         
         if ldistance < 72 then
-            handle_event("enemy_missed_player")
+            if battle_timer <= 0 then
+                handle_event("player_curse_high")
+            else
+                handle_event("enemy_missed_player")
+            end
             local_enemies[entity] = true
             battle_timer = 60
         end
@@ -530,7 +567,7 @@ net.Receive("rc_entitytakedamage", function(len)
     local lp = LocalPlayer()
 
     if target == lp and not is_fall_damage then
-        handle_event("enemy_damaged_player")
+        handle_event("enemy_damaged_player_huff")
         if attacker:IsNPC() or attacker:IsPlayer() and attacker != lp then
             local_enemies[attacker] = true
             battle_timer = 60
@@ -563,9 +600,25 @@ hook.Add("entity_killed", "rc_entitykilled", function(data)
     local attacker = Entity(data.entindex_attacker)
     local victim = Entity(data.entindex_killed)
 
+    local true_attacker = NULL
+    local weapon = NULL
+    
+    if attacker:IsPlayer() or attacker:IsNPC() then
+        true_attacker = attacker
+        weapon = true_attacker:GetActiveWeapon()
+    elseif IsValid(attacker) then
+        weapon = attacker
+        true_attacker = weapon:GetOwner()
+        if true_attacker == NULL then 
+            true_attacker = attacker
+        end
+    else
+        return
+    end
+
     local lp = LocalPlayer()
 
-	if attacker == lp and (victim:IsNPC() or victim:IsPlayer()) and (enemies[victim] or battle_timer > 0) then
+	if true_attacker == lp and (victim:IsNPC() or victim:IsPlayer()) and (enemies[victim] or battle_timer > 0) then
         handle_event("player_killed_enemy")
     end
 

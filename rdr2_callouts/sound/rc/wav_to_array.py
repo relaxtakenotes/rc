@@ -31,7 +31,8 @@ def process(path):
     path = path.replace("\\", "/")
     data["rc/"+path] = samples
 
-for file in glob.glob("**/**/*.wav"):
+for file in glob.glob("**/*.wav", recursive=True):
+    print(file)
     process(file)
 
 with open(r"..\..\lua\!rc_samples.lua", "w+") as f:
