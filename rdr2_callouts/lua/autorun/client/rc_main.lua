@@ -1,6 +1,6 @@
 /*
     Notes for people that wanna make their own sound packs with this:
-       1) Don't use non-wav formats, as it'll break certain timings due to SoundDuration() not supporting anythis else but wav (if you REALLY want non-wav, lmk)
+       1) Don't use non-wav formats, as it'll break certain timings due to SoundDuration() not supporting anything else but wav (if you REALLY want non-wav, lmk)
        2) Conversion tools can be found in the github repo, precisely in rdr2_callouts/sound/rc/
        3) If you do not wish or can't include a certain event type, you can simply not create a folder for it. The mod will ignore it and wont try to use it.
        4) If you wish for more functionality, let me know or make it yourself.
@@ -61,6 +61,7 @@ end
 
 local function find_sounds(pathstart, pathend)
     local result = file.Find("sound/"..pathstart..pathend, "GAME")
+    
     for i, _path in ipairs(result) do
         local path = pathstart.._path
         result[i] = path
@@ -855,16 +856,6 @@ local max_width = 0
 hook.Add("RenderScreenspaceEffects", "rc_ui", function()
     if not enabled:GetBool() then return end
 
-    local width = ScrW()
-    local height = ScrH()
-
-    local total_count = 0
-    for name, event in pairs(events) do
-        if event.visible != nil and not event.visible then continue end
-        total_count = total_count + 1
-    end
-    local count = 0
-
     if menu_open then
         animfrac = math.min(1, animfrac + FrameTime() * 2)
     else
@@ -872,6 +863,16 @@ hook.Add("RenderScreenspaceEffects", "rc_ui", function()
     end
 
     if animfrac <= 0 then return end
+
+    local width = ScrW()
+    local height = ScrH()
+
+    local total_count = 0
+    for name, event in pairs(events) do
+        if event.visible == false then continue end
+        total_count = total_count + 1
+    end
+    local count = 0
 
     local in_frac = math.ease.InQuad(1 - animfrac)
 
@@ -882,7 +883,7 @@ hook.Add("RenderScreenspaceEffects", "rc_ui", function()
     draw.RoundedBox(16, width * 0.1 - px, height * 0.5 + in_frac * height - total_count * 20 / 2 - py, max_width + px*2, total_count * 20 + py*2, Color(0,0,0,150))
 
     for name, event in pairsByKeys(events) do
-        if event.visible != nil and not event.visible then continue end
+        if event.visible == false then continue end
 
         local text_x = width * 0.1
         local text_y = count * 20 + height * 0.5 + in_frac * height - total_count * 20 / 2

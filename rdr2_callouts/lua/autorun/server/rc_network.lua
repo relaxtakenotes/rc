@@ -12,10 +12,15 @@ util.AddNetworkString("rc_enemies")
 net.Receive("rc_request_sound", function(len, ply)
     if not enabled:GetBool() then return end
 
-    // no protection on this what so ever...
-    // go wild lol
     local path = net.ReadString()
+
     if not string.StartsWith(path, "rc/") then return end
+
+    if ply.rc_playing then return end
+    ply.rc_playing = true
+    timer.Simple(SoundDuration(path) + 0.1, function() 
+        ply.rc_playing = false
+    end)
 
     ply:EmitSound(path, 75, 100, 1, CHAN_STATIC, 0, 0)
 
@@ -30,11 +35,12 @@ end)
 net.Receive("rc_stop_sound", function(len, ply)
     if not enabled:GetBool() then return end
 
-    // no protection on this what so ever...
-    // go wild lol
     local path = net.ReadString()
+
     if not string.StartsWith(path, "rc/") then return end
+
     ply:StopSound(path)
+    ply.rc_playing = false
 end)
 
 hook.Add("PlayerFootstep", "rc_footstep", function(ply, ...) 
@@ -84,32 +90,34 @@ hook.Add("FinishMove", "rc_threat_loop", function(ply, mv)
     ply.rc_timeout = 1
     ply.enemies = {}
 
-    for _, npc in ipairs(ents.FindByClass("npc_*")) do
-        if table.HasValue(ignore_list, npc:GetClass()) then continue end
-        if not IsValid(npc) or not npc:IsNPC() or not npc.GetEnemy then continue end --print(IsValid(npc), npc:IsNPC(), npc.GetEnemy, " --- ", npc)
-        if not npc_can_attack(npc) then continue end
-        local target = npc:GetEnemy()
-        if not target or not target:IsValid() then continue end
+    if enabled:GetBool() then
+        for _, npc in ipairs(ents.FindByClass("npc_*")) do
+            if table.HasValue(ignore_list, npc:GetClass()) then continue end
+            if not IsValid(npc) or not npc:IsNPC() or not npc.GetEnemy then continue end --print(IsValid(npc), npc:IsNPC(), npc.GetEnemy, " --- ", npc)
+            if not npc_can_attack(npc) then continue end
+            local target = npc:GetEnemy()
+            if not target or not target:IsValid() then continue end
 
-        if target == ply or enemy_is_alerted_and_close(npc, ply) then
-            local player_pos = ply:EyePos()
-            local npc_pos = npc:GetPos() + vector_up * 32
-            local distance = player_pos:Distance(npc_pos)
-    
-            local tr = util.TraceLine({
-                start = player_pos,
-                endpos = npc_pos,
-                filter = {ply, npc},
-                mask = MASK_NPCWORLDSTATIC
-            })
-    
-            if tr.Fraction <= 0.9 then
-                distance = distance ^ 1.2
+            if target == ply or enemy_is_alerted_and_close(npc, ply) then
+                local player_pos = ply:EyePos()
+                local npc_pos = npc:GetPos() + vector_up * 32
+                local distance = player_pos:Distance(npc_pos)
+        
+                local tr = util.TraceLine({
+                    start = player_pos,
+                    endpos = npc_pos,
+                    filter = {ply, npc},
+                    mask = MASK_NPCWORLDSTATIC
+                })
+        
+                if tr.Fraction <= 0.9 then
+                    distance = distance ^ 1.2
+                end
+
+                if distance >= 5000 then continue end
+
+                ply.enemies[npc] = true
             end
-
-            if distance >= 5000 then continue end
-
-            ply.enemies[npc] = true
         end
     end
 
