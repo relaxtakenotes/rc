@@ -536,14 +536,12 @@ net.Receive("rc_entityfirebullets", function(len)
     })
 
     if IsValid(tr.Entity) and tr.Entity == lp then return end
-
     if entity == lp then
         // handle localplayer shooting... and perhaps missing
         didnt_shoot_timer = 0
 
-        local entities = ents.FindInCone(tr.StartPos, dir, 10000000, 0.2)
-        
-        for i, ent in ipairs(entities) do
+        for ent, _ in pairs(enemies) do
+            
             if not IsValid(ent) or not (ent:IsNPC() or ent:IsPlayer()) or ent == lp then continue end
 
             local distance = ent:GetPos():Distance(lp:GetPos())
@@ -551,13 +549,19 @@ net.Receive("rc_entityfirebullets", function(len)
                 continue
             end
 
-            local ldistance, _, _ = util.DistanceToLine(tr.StartPos, tr.HitPos, ent:EyePos())
-            if ldistance < 72 and tr.Entity != ent then
+            local ldistance, lpoint, _ = util.DistanceToLine(tr.StartPos, tr.HitPos, ent:EyePos())
+
+            local ltr = util.TraceLine({
+                start = lpoint,
+                endpos = ent:EyePos(),
+                filter = ent,
+                mask = MASK_SHOT
+            })
+
+            if not ltr.Hit and ldistance < 72 and tr.Entity != ent then
                 handle_event("player_missed_enemy")
-                if enemies[ent] == true then
-                    battle_timer = 60
-                    misses = misses + 1
-                end
+                battle_timer = 60
+                misses = misses + 1
                 return // we already missed someone, no point in looking for more people to yell at!
             end
         end
