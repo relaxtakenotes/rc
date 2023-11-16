@@ -1,7 +1,7 @@
 import glob
 from pydub import AudioSegment
 
-for file in glob.glob("**/*.wav", recursive=True):
+for file in glob.glob("rdr2_callouts/sound/**/*.wav", recursive=True):
     try:
         print(file)
         loaded_file = AudioSegment.from_wav(file)

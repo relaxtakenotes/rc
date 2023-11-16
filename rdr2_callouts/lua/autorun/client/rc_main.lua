@@ -801,7 +801,7 @@ hook.Add("Think", "rc_think", function()
 end)
 
 surface.CreateFont("rc_font", {
-    font = "Tahoma", --  Use the font-name which is shown to you by your operating system Font Viewer, not the file name
+    font = "Tahoma", 
     extended = false,
     size = 18,
     weight = 400,

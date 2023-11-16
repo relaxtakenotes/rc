@@ -28,12 +28,12 @@ def process(path):
         except OverflowError as e:
             print(e, i, samples[i], lowest_sample)
             return
-    path = path.replace("\\", "/")
-    data["rc/"+path] = samples
+    path = path.replace("\\", "/").replace("rdr2_callouts/sound/", "")
+    data[path] = samples
 
-for file in glob.glob("**/*.wav", recursive=True):
+for file in glob.glob("rdr2_callouts/sound/**/*.wav", recursive=True):
     print(file)
     process(file)
 
-with open(r"..\..\lua\!rc_samples.lua", "w+") as f:
+with open(r"rdr2_callouts/lua/!rc_samples.lua", "w+") as f:
     f.write(json.dumps(data))
