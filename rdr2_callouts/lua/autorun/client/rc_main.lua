@@ -9,7 +9,7 @@
 */
  
 local enabled = CreateConVar("cl_rc_enabled", 1, FCVAR_ARCHIVE)
-local debug_enabled = CreateConVar("cl_rc_debug_enabled", 1, FCVAR_ARCHIVE)
+local debug_enabled = CreateConVar("cl_rc_debug_enabled", 0, FCVAR_ARCHIVE)
 local voice_name = CreateConVar("cl_rc_voice_name", "arthur", FCVAR_ARCHIVE)
 
 local desired_timeout = 5
@@ -504,6 +504,7 @@ concommand.Add("rc_talk", function(ply, cmd, args, argstr)
             events[args[1]].curse_type = args[2] == "MED" and "MED" or "HIGH"
         end
     end
+    
     handle_event(args[1], true)
 end)
 
