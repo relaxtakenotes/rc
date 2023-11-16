@@ -1,7 +1,7 @@
 /*
     Notes for people that wanna make their own sound packs with this:
        1) Don't use non-wav formats, as it'll break certain timings due to SoundDuration() not supporting anything else but wav (if you REALLY want non-wav, lmk)
-       2) Conversion tools can be found in the github repo, precisely in rdr2_callouts/sound/rc/
+       2) Conversion tools can be found in the github repo, precisely in rdr2_callouts/sound/rc/. Rename their extension from lua to just .py (you need "pip install pydub" for them)
        3) If you do not wish or can't include a certain event type, you can simply not create a folder for it. The mod will ignore it and wont try to use it.
        4) If you wish for more functionality, let me know or make it yourself.
           You can pull request improvements, fixes or changes to my github repo or post your own version wherever you want. No need to ask me for permission.
@@ -52,11 +52,11 @@ end
 local events = {}
 
 local function read_vector_uncompressed()
-	local tempVec = Vector(0, 0, 0)
-	tempVec.x = net.ReadFloat()
-	tempVec.y = net.ReadFloat()
-	tempVec.z = net.ReadFloat()
-	return tempVec
+    local tempVec = Vector(0, 0, 0)
+    tempVec.x = net.ReadFloat()
+    tempVec.y = net.ReadFloat()
+    tempVec.z = net.ReadFloat()
+    return tempVec
 end
 
 local function find_sounds(pathstart, pathend)
@@ -517,11 +517,11 @@ net.Receive("rc_entityfirebullets", function(len)
     if not enabled:GetBool() then return end
 
     local src = read_vector_uncompressed()
-	local dir = read_vector_uncompressed()
-	local vel = read_vector_uncompressed()
-	local spread = read_vector_uncompressed()
-	local entity = net.ReadEntity()
-	local weapon = net.ReadEntity()
+    local dir = read_vector_uncompressed()
+    local vel = read_vector_uncompressed()
+    local spread = read_vector_uncompressed()
+    local entity = net.ReadEntity()
+    local weapon = net.ReadEntity()
     local disposition = net.ReadInt(4)
 
     if not IsValid(entity) then return end
@@ -648,7 +648,7 @@ hook.Add("entity_killed", "rc_entitykilled", function(data)
 
     local lp = LocalPlayer()
 
-	if true_attacker == lp and (victim:IsNPC() or victim:IsPlayer()) and (enemies[victim] or battle_timer > 0) then
+    if true_attacker == lp and (victim:IsNPC() or victim:IsPlayer()) and (enemies[victim] or battle_timer > 0) then
         handle_event("player_killed_enemy")
     end
 
@@ -801,21 +801,21 @@ hook.Add("Think", "rc_think", function()
 end)
 
 surface.CreateFont("rc_font", {
-    font = "Chinese Rocks", --  Use the font-name which is shown to you by your operating system Font Viewer, not the file name
-	extended = false,
-	size = 18,
-	weight = 400,
-	blursize = 0,
-	scanlines = 0,
-	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = false,
-	additive = false,
-	outline = false,
+    font = "Tahoma", --  Use the font-name which is shown to you by your operating system Font Viewer, not the file name
+    extended = false,
+    size = 18,
+    weight = 400,
+    blursize = 0,
+    scanlines = 0,
+    antialias = true,
+    underline = false,
+    italic = false,
+    strikeout = false,
+    symbol = false,
+    rotary = false,
+    shadow = false,
+    additive = false,
+    outline = false,
 })
 
 concommand.Add("rc_menu", function() 
