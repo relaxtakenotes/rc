@@ -122,11 +122,32 @@ net.Receive("rc_sound_broadcast", function(len)
     local entity = net.ReadEntity()
     local path = net.ReadString()
 
-    if samples[path] and IsValid(entity) then
+    if not IsValid(entity) then return end
+
+    if entity == LocalPlayer() then
+        surface.PlaySound(path)
+    else
+        entity:EmitSound(path, 100, 100, 1, CHAN_STATIC, 0, 0)
+    end
+
+    if samples[path] then
         entity.current_samples = samples[path]
         entity.current_samples_tick = 0
         entity.current_samples_length = table.Count(samples[path])
     end
+end)
+
+net.Receive("rc_stopsound_broadcast", function(len)
+    local entity = net.ReadEntity()
+    local path = net.ReadString()
+
+    if not IsValid(entity) then return end
+
+    entity:StopSound(path)
+
+    entity.current_samples = {}
+    entity.current_samples_tick = 0
+    entity.current_samples_length = 0
 end)
 
 // basically made crackhead classes right there.
@@ -145,14 +166,14 @@ local function add_event(data)
         files = files,
         timeout = 0,
         check_timeout = 0,
-        desired_timeout = data.desired_timeout,
-        chance = data.chance,
+        desired_timeout = CreateConVar("cl_rc_timeout_"..data.name, data.desired_timeout or 0, FCVAR_ARCHIVE),
+        chance = CreateConVar("cl_rc_chance_"..data.name, data.chance or 0, FCVAR_ARCHIVE),
         should_play = function(self)
             local _should_play = true
             if isfunction(data.should_play) then
                 _should_play = data.should_play(self)
             end
-            return math.Rand(0, 1) > 1-self.chance and timeout <= 0 and self.timeout <= 0 and _should_play end,
+            return math.Rand(0, 1) > 1-self.chance:GetFloat() and timeout <= 0 and self.timeout <= 0 and _should_play end,
         get_sound = data.get_sound,
         play = data.play or function(self)
             if playing then return end
@@ -190,7 +211,7 @@ local function handle_event(name, concommand_forced)
     event:play()
 
     if not event.manual then 
-        event.timeout = event.desired_timeout
+        event.timeout = event.desired_timeout:GetFloat()
         timeout = desired_timeout 
     end
 end
@@ -294,7 +315,13 @@ local function add_events()
             table.insert(choices, get_random_file_with_pattern(self.files, "PLAYER_TAUNT_LAW_%w+_"..distance))
             table.insert(choices, get_random_file_with_pattern(self.files, "PLAYER_TAUNT_"..multiple.."_%w+_"..distance))
 
-            return choices[math.random(1, 3)]
+            local choice = "none"
+            while choice == "none" do
+                choice = choices[math.random(1,3)]
+            end
+            print("fucker", table.ToString(choices))
+
+            return choice
         end
     })
 
@@ -318,7 +345,8 @@ local function add_events()
                 play(path, 1)
                 timer.Simple(SoundDuration(path) + 0.2, function() playing = false end)
             end)
-            timeout = self.desired_timeout
+
+            timeout = self.desired_timeout:GetFloat()
         end
     })
 

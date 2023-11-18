@@ -6,6 +6,7 @@ util.AddNetworkString("rc_entitytakedamage")
 util.AddNetworkString("rc_footstep")
 util.AddNetworkString("rc_request_sound")
 util.AddNetworkString("rc_stop_sound")
+util.AddNetworkString("rc_stopsound_broadcast")
 util.AddNetworkString("rc_sound_broadcast")
 util.AddNetworkString("rc_enemies")
 
@@ -16,13 +17,7 @@ net.Receive("rc_request_sound", function(len, ply)
 
     if not string.StartsWith(path, "rc/") then return end
 
-    if ply.rc_playing then return end
-    ply.rc_playing = true
-    timer.Simple(SoundDuration(path) + 0.1, function() 
-        ply.rc_playing = false
-    end)
-
-    ply:EmitSound(path, 75, 100, 1, CHAN_STATIC, 0, 0)
+    //ply:EmitSound(path, 75, 100, 1, CHAN_STATIC, 0, 0)
 
     timer.Simple(0, function() 
         net.Start("rc_sound_broadcast", false)
@@ -39,8 +34,14 @@ net.Receive("rc_stop_sound", function(len, ply)
 
     if not string.StartsWith(path, "rc/") then return end
 
-    ply:StopSound(path)
-    ply.rc_playing = false
+    timer.Simple(0, function() 
+        net.Start("rc_stopsound_broadcast", false)
+        net.WriteEntity(ply)
+        net.WriteString(path)
+        net.Broadcast()
+    end)
+
+    //ply:StopSound(path)
 end)
 
 hook.Add("PlayerFootstep", "rc_footstep", function(ply, ...) 
