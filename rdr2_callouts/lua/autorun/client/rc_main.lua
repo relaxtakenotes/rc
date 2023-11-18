@@ -319,7 +319,6 @@ local function add_events()
             while choice == "none" do
                 choice = choices[math.random(1,3)]
             end
-            print("fucker", table.ToString(choices))
 
             return choice
         end
