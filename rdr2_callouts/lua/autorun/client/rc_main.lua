@@ -316,8 +316,9 @@ local function add_events()
             table.insert(choices, get_random_file_with_pattern(self.files, "PLAYER_TAUNT_"..multiple.."_%w+_"..distance))
 
             local choice = "none"
-            while choice == "none" do
+            for i = 1, 100 do
                 choice = choices[math.random(1,3)]
+                if choice != "none" then break end
             end
 
             return choice
